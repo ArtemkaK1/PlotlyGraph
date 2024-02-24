@@ -4,20 +4,42 @@ import dash
 from dash import html
 from dash import dcc
 
-# Данные из https://github.com/rssh/dou_pl_questionare/blob/master/2024_01/FinalTable.csv
-data = pd.read_csv('FinalTable.csv').head(10)
-
-# Создание фигуры Plotly
-fig = px.bar(x=data['language'], y=data['freq'], labels={'x': 'Язык программирования', 'y': 'Процент использования'},
-             title='Топ-10 самых популярных языков программирования на 2024')
+# Данные https://github.com/rssh/dou_pl_questionare/tree/master
+def load_data(year):
+    file_path = f'year_{year}.csv'
+    data = pd.read_csv(file_path).head(10)
+    return data
 
 # Создание Dash приложения
 app = dash.Dash(__name__)
 
-# Отображение графика в Dash
+# Опции для выбора года
+year_options = [{'label': str(year), 'value': year} for year in range(2022, 2025)]
+
+# Создание фигуры Plotly
+def create_figure(data, year):
+    fig = px.bar(x=data['language'], y=data['freq'], labels={'x': 'Язык программирования', 'y': 'Процент использования'},
+                 title=f'Топ-10 самых популярных языков программирования на {year}')
+    return fig
+
+# Отображение графика и поля выбора года в Dash
 app.layout = html.Div([
-    dcc.Graph(figure=fig)
+    dcc.Dropdown(
+        id='year-dropdown',
+        options=year_options,
+        value=2022
+    ),
+    dcc.Graph(id='bar-chart')
 ])
+
+@app.callback(
+    dash.dependencies.Output('bar-chart', 'figure'),
+    [dash.dependencies.Input('year-dropdown', 'value')]
+)
+def update_figure(selected_year):
+    data = load_data(selected_year)
+    fig = create_figure(data, selected_year)
+    return fig
 
 if __name__ == '__main__':
     app.run_server(debug=True)
